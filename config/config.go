@@ -20,41 +20,33 @@ type Configuration struct {
 }
 
 func Configure(dirPath string, filePath string) (file *os.File, err error) {
-	// get from the user: username, password, projects and repositories to github
+	// get from the user: oauth token, projects and repositories to github
 	file, err = createConfigFile(dirPath, filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	// TODO: those values should be taken from user input.
-	// 		 For now it's just dummy values
 	token := screen.AskQuestion("Please provide us an oauth token to you github profile:")
+
 	headers := map[string]string{
 		"Authorization": "token " + token,
 	}
-	api.RawRequest("GET", "user/repos", headers, nil)
-	// req, err := http.NewRequest("GET", "https://api.github.com/user/repos", nil)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// client := &http.Client{}
-	// req.Header.Add("Authorization", "token "+token)
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer client.CloseIdleConnections()
+	repos, err := api.RawRequest("GET", "user/repos", &headers, nil)
+	if err != nil {
+		panic(err)
+	}
 
-	// body, _ := ioutil.ReadAll(resp.Body)
-	// fmt.Println(string(body))
-
-	// respBody, _ := ioutil.ReadAll(resp.Body)
-	// fmt.Println(respBody)
+	var items []screen.ScreenItem
+	for _, repo := range repos {
+		items = append(items, screen.ScreenItem(repo))
+	}
+	workingRepo := screen.ChooseList(items, "Select working repository")
+	issueRepo := screen.ChooseList(items, "Select board repository")
 
 	cfg := Configuration{
-		IssueRepoID:   1234,
-		WorkingRepoID: 4321,
+		IssueRepoID:   issueRepo.GetId(),
+		WorkingRepoID: workingRepo.GetId(),
 		OauthToken:    token,
 	}
 	encoder := yaml.NewEncoder(file)
@@ -99,5 +91,5 @@ func createConfigFile(dirPath string, filePath string) (*os.File, error) {
 	} else if err != nil {
 		return nil, err
 	}
-	return os.Open(config_path)
+	return os.OpenFile(config_path, os.O_WRONLY, 600)
 }

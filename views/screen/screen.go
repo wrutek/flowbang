@@ -8,11 +8,18 @@ import (
 	term "github.com/nsf/termbox-go"
 )
 
-func RenderChooseList() {
+type ScreenItem interface {
+	GetId() int
+	GetName() string
+	GetFullName() string
+}
+
+func ChooseList(items []ScreenItem, message string) ScreenItem {
 	var msg *string
-	list := []string{"wikt", "tor", "rut", "ka"}
 	position := 0
-	maxPosition := len(list)
+	prevPosition := 0
+	maxPosition := len(items)
+	isBreak := false
 
 	err := term.Init()
 	if err != nil {
@@ -23,16 +30,24 @@ func RenderChooseList() {
 renderMenuLoop:
 	for {
 		reset()
-		renderList(list, position)
+
+		if len(message) != 0 {
+			fmt.Println(message)
+		}
+		renderList(items, position)
 		if msg != nil {
 			fmt.Println(*msg)
 		}
-		position, msg, _ = fetchMenuPosition(position, maxPosition-1)
-		if position == -1234 {
+		position, msg, _, isBreak = fetchMenuPosition(position, maxPosition-1)
+		if isBreak == true {
+			// Close list menu
 			break renderMenuLoop
 		}
+		prevPosition = position
 
 	}
+	reset()
+	return items[prevPosition]
 }
 
 func AskQuestion(question string) (response string) {
@@ -53,8 +68,10 @@ responseLoop:
 		case term.EventKey:
 			switch ev.Key {
 			case term.KeyEnter:
+				// Quit question screen on enter
 				break responseLoop
 			case term.KeySpace:
+				// space is not uncer ev.CH event
 				fmt.Print(" ")
 				response = response + " "
 			default:
@@ -72,40 +89,44 @@ func reset() {
 	term.Sync() // cosmestic purpose
 }
 
-func fetchMenuPosition(actualPos, maxPos int) (pos int, msg *string, err error) {
+func fetchMenuPosition(actualPos, maxPos int) (pos int, msg *string, err error, is_breake bool) {
+	is_breake = false
 	switch ev := term.PollEvent(); ev.Type {
 	case term.EventKey:
 		switch ev.Key {
 		case term.KeyArrowUp:
 			if actualPos > 0 {
-				return actualPos - 1, nil, nil
+				return actualPos - 1, nil, nil, false
 			}
-			return 0, nil, nil
+			return 0, nil, nil, false
 		case term.KeyArrowDown:
 			if actualPos < maxPos {
-				return actualPos + 1, nil, nil
+				return actualPos + 1, nil, nil, false
 			}
-			return maxPos, nil, nil
+			return maxPos, nil, nil, false
 		case term.KeyEsc:
-			return -1234, nil, nil
+			// Close list screen
+			return actualPos, nil, nil, true
+		case term.KeyEnter:
+			return actualPos, nil, nil, true
 		default:
 			msg := fmt.Sprintf("Try to use only arrrows: %c", ev.Ch)
-			return actualPos, &msg, nil
+			return actualPos, &msg, nil, is_breake
 
 		}
 	case term.EventError:
 		panic(ev.Err)
 	}
-	return 0, nil, nil
+	return 0, nil, nil, is_breake
 }
 
-func renderList(list []string, position int) {
+func renderList(list []ScreenItem, position int) {
 	var prefix string
-	for i, menu := range list {
+	for i, item := range list {
 		prefix = "[ ]"
 		if i == position {
 			prefix = "[*]"
 		}
-		fmt.Println(prefix, menu)
+		fmt.Println(prefix, item.GetFullName())
 	}
 }
