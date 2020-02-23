@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/wrutek/flowbang/config"
 	"path/filepath"
+
+	"github.com/wrutek/flowbang/config"
 )
 
 var CONFIG_DIR string = filepath.Join(".config", "flowbang")
@@ -32,6 +33,7 @@ func main() {
 	case "get_todos":
 		get_todos()
 	case "work_on":
+		// screen.RenderChooseList()
 		fmt.Println("Your are trying to work on not exisitng issue")
 	default:
 		fmt.Println("Error: wrong command: ", command)
@@ -41,5 +43,3 @@ func main() {
 func get_todos() {
 	fmt.Println("Getting todos")
 }
-
-
