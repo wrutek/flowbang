@@ -14,10 +14,11 @@ go build github.com/wrutek/flowbang
 
 No you have only one command that is working `configure`. 
 This command creates ~/.config/flowbang/flowbang.conf file and stores there
-your answares to 3 simple questions:
- - github oauth token
+your answares to 4 simple questions:
+ - github oauth [token](https://github.com/settings/tokens)
  - repository on which you want to workon
  - repository in which a project board is configured (sometimes it is different from above repo)
+ - select a project on which you will be working (actual board)
 
  ## KUDOS
 

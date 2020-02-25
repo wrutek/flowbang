@@ -7,25 +7,7 @@ import (
 	"net/http"
 )
 
-type RespItem struct {
-	Id       int    `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
-}
-
-func (resp RespItem) GetId() int {
-	return resp.Id
-}
-
-func (resp RespItem) GetName() string {
-	return resp.Name
-}
-
-func (resp RespItem) GetFullName() string {
-	return resp.FullName
-}
-
-func RawRequest(method string, uri string, headers *map[string]string, data interface{}) (respBody []RespItem, err error) {
+func RawRequest(method string, uri string, headers *map[string]string, data interface{}, out interface{}) (err error) {
 	req, err := http.NewRequest(method, "https://api.github.com/"+uri, nil)
 	if err != nil {
 		panic(err)
@@ -44,11 +26,16 @@ func RawRequest(method string, uri string, headers *map[string]string, data inte
 	}
 	defer client.CloseIdleConnections()
 
+	if resp.StatusCode > 299 {
+		// TODO: http error handling
+		errBody, _ := ioutil.ReadAll(resp.Body)
+		panic(fmt.Errorf(string(errBody)))
+	}
 	r, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(r, &respBody)
+	err = json.Unmarshal(r, out)
 	if err != nil {
 		return
 	}
