@@ -98,12 +98,12 @@ func fetchMenuPosition(actualPos, maxPos int) (pos int, msg *string, err error, 
 			if actualPos > 0 {
 				return actualPos - 1, nil, nil, false
 			}
-			return 0, nil, nil, false
+			return maxPos, nil, nil, false
 		case term.KeyArrowDown:
 			if actualPos < maxPos {
 				return actualPos + 1, nil, nil, false
 			}
-			return maxPos, nil, nil, false
+			return 0, nil, nil, false
 		case term.KeyEsc:
 			// Close list screen
 			return actualPos, nil, nil, true

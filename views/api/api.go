@@ -28,8 +28,9 @@ func RawRequest(method string, uri string, headers *map[string]string, data inte
 
 	if resp.StatusCode > 299 {
 		// TODO: http error handling
-		errBody, _ := ioutil.ReadAll(resp.Body)
-		panic(fmt.Errorf(string(errBody)))
+		errBodyByte, _ := ioutil.ReadAll(resp.Body)
+		errBody := fmt.Sprintf("%s\n code: %d\n%s", req.URL.Path, resp.StatusCode, string(errBodyByte))
+		panic(fmt.Errorf(errBody))
 	}
 	r, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
