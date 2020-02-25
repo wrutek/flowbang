@@ -17,10 +17,22 @@ type Configuration struct {
 	IssueRepoID   int    `yaml:"issue_repo_id"`
 	WorkingRepoID int    `yaml:"working_repo_id"`
 	OauthToken    string `yaml:"oauth_token"`
+	ProjectID     int    `yaml:"project_id"`
 }
 
 func Configure(dirPath string, filePath string) (file *os.File, err error) {
 	// get from the user: oauth token, projects and repositories to github
+processThisCommand:
+	for {
+		answare := screen.AskQuestion("This will override your current configuration. Are you sure? [y/n]")
+		switch answare {
+		case "Y", "y":
+			break processThisCommand
+		case "n", "N":
+			return nil, fmt.Errorf("you choose not to continue configuration")
+		}
+	}
+
 	file, err = createConfigFile(dirPath, filePath)
 	if err != nil {
 		return nil, err
@@ -32,7 +44,8 @@ func Configure(dirPath string, filePath string) (file *os.File, err error) {
 	headers := map[string]string{
 		"Authorization": "token " + token,
 	}
-	repos, err := api.RawRequest("GET", "user/repos", &headers, nil)
+	var repos []api.RepoItem
+	err = api.RawRequest("GET", "user/repos", &headers, nil, &repos)
 	if err != nil {
 		panic(err)
 	}
@@ -44,10 +57,23 @@ func Configure(dirPath string, filePath string) (file *os.File, err error) {
 	workingRepo := screen.ChooseList(items, "Select working repository")
 	issueRepo := screen.ChooseList(items, "Select board repository")
 
+	headers["Accept"] = "application/vnd.github.inertia-preview+json"
+	var projects []api.ProjectItem
+	err = api.RawRequest("GET", "repos/"+issueRepo.GetFullName()+"/projects", &headers, nil, &projects)
+	if err != nil {
+		panic(err)
+	}
+	items = nil
+	for _, project := range projects {
+		items = append(items, screen.ScreenItem(project))
+	}
+	project := screen.ChooseList(items, "Select project you will be working on")
+
 	cfg := Configuration{
 		IssueRepoID:   issueRepo.GetId(),
 		WorkingRepoID: workingRepo.GetId(),
 		OauthToken:    token,
+		ProjectID:     project.GetId(),
 	}
 	encoder := yaml.NewEncoder(file)
 	defer encoder.Close()
