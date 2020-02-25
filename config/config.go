@@ -14,10 +14,13 @@ import (
 )
 
 type Configuration struct {
-	IssueRepoID   int    `yaml:"issue_repo_id"`
-	WorkingRepoID int    `yaml:"working_repo_id"`
-	OauthToken    string `yaml:"oauth_token"`
-	ProjectID     int    `yaml:"project_id"`
+	IssueRepoID        int    `yaml:"issue_repo_id"`
+	WorkingRepoID      int    `yaml:"working_repo_id"`
+	OauthToken         string `yaml:"oauth_token"`
+	ProjectID          int    `yaml:"project_id"`
+	TodoColumnID       int    `yaml:"todo_id"`
+	InprogressColumnID int    `yaml:"inprogress_id"`
+	DoneColumnID       int    `yaml:"done_id"`
 }
 
 func Configure(dirPath string, filePath string) (file *os.File, err error) {
@@ -69,11 +72,27 @@ processThisCommand:
 	}
 	project := screen.ChooseList(items, "Select project you will be working on")
 
+	var columns []api.ColumnItem
+	err = api.RawRequest("GET", fmt.Sprintf("projects/%d/columns", project.GetId()), &headers, nil, &columns)
+	if err != nil {
+		panic(err)
+	}
+	items = nil
+	for _, column := range columns {
+		items = append(items, screen.ScreenItem(column))
+	}
+	todoColumn := screen.ChooseList(items, "Select a \"To Do\" column")
+	inProgressColumn := screen.ChooseList(items, "Select a \"In Progress\" column")
+	doneColumn := screen.ChooseList(items, "Select a \"Done\" column")
+
 	cfg := Configuration{
-		IssueRepoID:   issueRepo.GetId(),
-		WorkingRepoID: workingRepo.GetId(),
-		OauthToken:    token,
-		ProjectID:     project.GetId(),
+		IssueRepoID:        issueRepo.GetId(),
+		WorkingRepoID:      workingRepo.GetId(),
+		OauthToken:         token,
+		ProjectID:          project.GetId(),
+		TodoColumnID:       todoColumn.GetId(),
+		InprogressColumnID: inProgressColumn.GetId(),
+		DoneColumnID:       doneColumn.GetId(),
 	}
 	encoder := yaml.NewEncoder(file)
 	defer encoder.Close()

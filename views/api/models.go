@@ -1,5 +1,22 @@
 package api
 
+type ColumnItem struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func (column ColumnItem) GetId() int {
+	return column.ID
+}
+
+func (column ColumnItem) GetName() string {
+	return column.Name
+}
+
+func (column ColumnItem) GetFullName() string {
+	return column.Name
+}
+
 type ProjectItem struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
