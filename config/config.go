@@ -1,4 +1,4 @@
-// package config is responsible for creating and or just opening config file
+// Package config is responsible for creating and or just opening config file
 // and save user configuration of this tool to this file in yaml format
 package config
 
@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Configuration representation of current configuration
 type Configuration struct {
 	IssueRepoID        int    `yaml:"issue_repo_id"`
 	WorkingRepoID      int    `yaml:"working_repo_id"`
@@ -23,6 +24,7 @@ type Configuration struct {
 	DoneColumnID       int    `yaml:"done_id"`
 }
 
+// Configure one of the main functions of flobang. Configure a whole system
 func Configure(dirPath string, filePath string) (file *os.File, err error) {
 	// get from the user: oauth token, projects and repositories to github
 processThisCommand:
@@ -53,9 +55,9 @@ processThisCommand:
 		panic(err)
 	}
 
-	var items []screen.ScreenItem
+	var items []screen.Item
 	for _, repo := range repos {
-		items = append(items, screen.ScreenItem(repo))
+		items = append(items, screen.Item(repo))
 	}
 	workingRepo := screen.ChooseList(items, "Select working repository")
 	issueRepo := screen.ChooseList(items, "Select board repository")
@@ -68,31 +70,31 @@ processThisCommand:
 	}
 	items = nil
 	for _, project := range projects {
-		items = append(items, screen.ScreenItem(project))
+		items = append(items, screen.Item(project))
 	}
 	project := screen.ChooseList(items, "Select project you will be working on")
 
 	var columns []api.ColumnItem
-	err = api.RawRequest("GET", fmt.Sprintf("projects/%d/columns", project.GetId()), &headers, nil, &columns)
+	err = api.RawRequest("GET", fmt.Sprintf("projects/%d/columns", project.GetID()), &headers, nil, &columns)
 	if err != nil {
 		panic(err)
 	}
 	items = nil
 	for _, column := range columns {
-		items = append(items, screen.ScreenItem(column))
+		items = append(items, screen.Item(column))
 	}
 	todoColumn := screen.ChooseList(items, "Select a \"To Do\" column")
-	inProgressColumn := screen.ChooseList(items, "Select a \"In Progress\" column")
+	inProgressColumn := screen.ChooseList(items, "Select an \"In Progress\" column")
 	doneColumn := screen.ChooseList(items, "Select a \"Done\" column")
 
 	cfg := Configuration{
-		IssueRepoID:        issueRepo.GetId(),
-		WorkingRepoID:      workingRepo.GetId(),
+		IssueRepoID:        issueRepo.GetID(),
+		WorkingRepoID:      workingRepo.GetID(),
 		OauthToken:         token,
-		ProjectID:          project.GetId(),
-		TodoColumnID:       todoColumn.GetId(),
-		InprogressColumnID: inProgressColumn.GetId(),
-		DoneColumnID:       doneColumn.GetId(),
+		ProjectID:          project.GetID(),
+		TodoColumnID:       todoColumn.GetID(),
+		InprogressColumnID: inProgressColumn.GetID(),
+		DoneColumnID:       doneColumn.GetID(),
 	}
 	encoder := yaml.NewEncoder(file)
 	defer encoder.Close()
@@ -117,24 +119,24 @@ func createConfigFile(dirPath string, filePath string) (*os.File, error) {
 		return nil, err
 	}
 
-	config_dir := filepath.Join(cUser.HomeDir, dirPath)
-	config_path := filepath.Join(cUser.HomeDir, filePath)
+	configDir := filepath.Join(cUser.HomeDir, dirPath)
+	configPath := filepath.Join(cUser.HomeDir, filePath)
 
 	// Create config directory if does not exists
-	_, err = os.Stat(config_dir)
+	_, err = os.Stat(configDir)
 	if os.IsNotExist(err) {
-		os.MkdirAll(config_dir, 0711)
+		os.MkdirAll(configDir, 0711)
 	} else if err != nil {
 		// If there is different error from IsNotExists return error
 		fmt.Println("Error: ", err)
 		return nil, err
 	}
 
-	_, err = os.Stat(config_path)
+	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
-		return os.Create(config_path)
+		return os.Create(configPath)
 	} else if err != nil {
 		return nil, err
 	}
-	return os.OpenFile(config_path, os.O_WRONLY, 600)
+	return os.OpenFile(configPath, os.O_WRONLY, 600)
 }

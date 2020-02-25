@@ -7,6 +7,9 @@ import (
 	"net/http"
 )
 
+// RawRequest simple helper for making requests to github api.
+// It will be mostly used durring configuration process where
+// we do not have oauth token yet
 func RawRequest(method string, uri string, headers *map[string]string, data interface{}, out interface{}) (err error) {
 	req, err := http.NewRequest(method, "https://api.github.com/"+uri, nil)
 	if err != nil {
@@ -41,8 +44,4 @@ func RawRequest(method string, uri string, headers *map[string]string, data inte
 		return
 	}
 	return
-}
-
-func DoNothing() {
-	fmt.Println("I'll do nothing")
 }

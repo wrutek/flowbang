@@ -8,8 +8,11 @@ import (
 	"github.com/wrutek/flowbang/config"
 )
 
-var CONFIG_DIR string = filepath.Join(".config", "flowbang")
-var CONFIG_PATH string = filepath.Join(CONFIG_DIR, "flowbang.conf")
+// ConfigDir a path to place where all config file will be stored
+var ConfigDir string = filepath.Join(".config", "flowbang")
+
+// ConfigPath a path to main config file
+var ConfigPath string = filepath.Join(ConfigDir, "flowbang.conf")
 
 func main() {
 	flag.Parse()
@@ -25,13 +28,13 @@ func main() {
 	switch command {
 	case "configure":
 		/* configure flowbang and prepare for first run */
-		_, err := config.Configure(CONFIG_DIR, CONFIG_PATH)
+		_, err := config.Configure(ConfigDir, ConfigPath)
 		if err != nil {
 			fmt.Println("Error: Flowbang configuration failed")
 			panic(err)
 		}
 	case "get_todos":
-		get_todos()
+		getTodos()
 	case "work_on":
 		// screen.RenderChooseList()
 		fmt.Println("Your are trying to work on not exisitng issue")
@@ -40,6 +43,6 @@ func main() {
 	}
 }
 
-func get_todos() {
+func getTodos() {
 	fmt.Println("Getting todos")
 }
