@@ -5,28 +5,18 @@ package config
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 
+	"github.com/wrutek/flowbang/config/configmodels"
+	"github.com/wrutek/flowbang/settings"
 	"github.com/wrutek/flowbang/views/api"
 	"github.com/wrutek/flowbang/views/screen"
 	"gopkg.in/yaml.v2"
 )
 
-// Configuration representation of current configuration
-type Configuration struct {
-	IssueRepoID        int    `yaml:"issue_repo_id"`
-	WorkingRepoID      int    `yaml:"working_repo_id"`
-	OauthToken         string `yaml:"oauth_token"`
-	ProjectID          int    `yaml:"project_id"`
-	TodoColumnID       int    `yaml:"todo_id"`
-	InprogressColumnID int    `yaml:"inprogress_id"`
-	DoneColumnID       int    `yaml:"done_id"`
-}
-
 // Configure one of the main functions of flobang. Configure a whole system
-func Configure(dirPath string, filePath string) (file *os.File, err error) {
-	// get from the user: oauth token, projects and repositories to github
+// get from the user: oauth token, projects and repositories to github
+func Configure() (err error) {
 processThisCommand:
 	for {
 		answare := screen.AskQuestion("This will override your current configuration. Are you sure? [y/n]")
@@ -34,13 +24,12 @@ processThisCommand:
 		case "Y", "y":
 			break processThisCommand
 		case "n", "N":
-			return nil, fmt.Errorf("you choose not to continue configuration")
+			return fmt.Errorf("you choose not to continue configuration")
 		}
 	}
-
-	file, err = createConfigFile(dirPath, filePath)
+	file, err := createConfigFile(settings.FileName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
@@ -50,7 +39,7 @@ processThisCommand:
 		"Authorization": "token " + token,
 	}
 	var repos []api.RepoItem
-	err = api.RawRequest("GET", "user/repos", &headers, nil, &repos)
+	err = api.RawRequest("GET", "user/repos", headers, nil, &repos)
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +53,7 @@ processThisCommand:
 
 	headers["Accept"] = "application/vnd.github.inertia-preview+json"
 	var projects []api.ProjectItem
-	err = api.RawRequest("GET", "repos/"+issueRepo.GetFullName()+"/projects", &headers, nil, &projects)
+	err = api.RawRequest("GET", "repos/"+issueRepo.GetFullName()+"/projects", headers, nil, &projects)
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +64,7 @@ processThisCommand:
 	project := screen.ChooseList(items, "Select project you will be working on")
 
 	var columns []api.ColumnItem
-	err = api.RawRequest("GET", fmt.Sprintf("projects/%d/columns", project.GetID()), &headers, nil, &columns)
+	err = api.RawRequest("GET", fmt.Sprintf("projects/%d/columns", project.GetID()), headers, nil, &columns)
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +76,7 @@ processThisCommand:
 	inProgressColumn := screen.ChooseList(items, "Select an \"In Progress\" column")
 	doneColumn := screen.ChooseList(items, "Select a \"Done\" column")
 
-	cfg := Configuration{
+	cfg := configmodels.Configuration{
 		IssueRepoID:        issueRepo.GetID(),
 		WorkingRepoID:      workingRepo.GetID(),
 		OauthToken:         token,
@@ -101,36 +90,21 @@ processThisCommand:
 
 	err = encoder.Encode(cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	return
 }
 
-// func GetConfiguration() conf *Configuration {
-
-// }
-
-func createConfigFile(dirPath string, filePath string) (*os.File, error) {
+func createConfigFile(configFileName string) (*os.File, error) {
 	// User is required to fetch home directory
-	cUser, err := user.Current()
+	currDir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("ERROR: Couldn't find currently logged in user.")
+		fmt.Println("ERROR: " + err.Error())
 		return nil, err
 	}
 
-	configDir := filepath.Join(cUser.HomeDir, dirPath)
-	configPath := filepath.Join(cUser.HomeDir, filePath)
-
-	// Create config directory if does not exists
-	_, err = os.Stat(configDir)
-	if os.IsNotExist(err) {
-		os.MkdirAll(configDir, 0711)
-	} else if err != nil {
-		// If there is different error from IsNotExists return error
-		fmt.Println("Error: ", err)
-		return nil, err
-	}
+	configPath := filepath.Join(currDir, configFileName)
 
 	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
