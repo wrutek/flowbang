@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/wrutek/flowbang/config"
+	"github.com/wrutek/flowbang/controllers"
 )
 
 // ConfigDir a path to place where all config file will be stored
@@ -28,7 +29,7 @@ func main() {
 	switch command {
 	case "configure":
 		/* configure flowbang and prepare for first run */
-		_, err := config.Configure(ConfigDir, ConfigPath)
+		err := config.Configure()
 		if err != nil {
 			fmt.Println("Error: Flowbang configuration failed")
 			panic(err)
@@ -37,6 +38,8 @@ func main() {
 		getTodos()
 	case "work_on":
 		// screen.RenderChooseList()
+		controllers.ChooseIssue()
+
 		fmt.Println("Your are trying to work on not exisitng issue")
 	default:
 		fmt.Println("Error: wrong command: ", command)
