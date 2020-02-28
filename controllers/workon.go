@@ -49,13 +49,23 @@ func ChooseIssue() (err error) {
 	var cards []CardItem
 	var items []screen.Item
 
+	fmt.Println("Fetching cards from the board...")
 	err = api.Get(fmt.Sprintf("projects/columns/%d/cards", cfg.TodoColumnID), &cards, headers)
 	if err != nil {
 		return
 	}
+	fmt.Println("Cards fetched.")
+	fmt.Print("fetching issues for all cards...\n")
 	var issue issueItem
-	for _, card := range cards {
+	progressBar := screen.ProgressBar{
+		Title:  "Fetching issues for board cards",
+		Desc:   "",
+		Length: len(cards),
+	}
+	progressBar.Init()
+	for i, card := range cards {
 		// Fetch related issue/pull request to this card
+		progressBar.Update(i)
 		err = api.Get(card.ContentURL, &issue, headers)
 		if err != nil {
 			return
@@ -63,14 +73,16 @@ func ChooseIssue() (err error) {
 		// Get all users that are assigned to this ticket
 		assignees := ""
 		for _, assignee := range issue.Assignees {
-			assignees = assignees + fmt.Sprintf("[%s]", assignee.Login)
+			assignees = assignees + fmt.Sprintf("[\x1b[33m%s\x1b[0m] ", assignee.Login)
 		}
+		fmt.Print("\n")
 
-		card.Name = fmt.Sprintf("%s %s", issue.Name, assignees)
+		card.Name = fmt.Sprintf("%s%s", assignees, issue.Name)
 		items = append(items, screen.Item(card))
 	}
-	screen.ChooseList(items, "Select a ticket on which you want to work on")
-	fmt.Println(items)
+	progressBar.Close()
+	item := screen.ChooseList(items, "Select a ticket on which you want to work on")
+	fmt.Println(item)
 
 	return
 }
