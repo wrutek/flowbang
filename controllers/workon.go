@@ -32,6 +32,7 @@ func (card CardItem) GetFullName() string {
 
 type issueItem struct {
 	Name      string `json:"title"`
+	Number    int    `json:"number"`
 	Assignees []struct {
 		Login string `json:"login"`
 	} `json:"assignees"`
@@ -65,7 +66,7 @@ func ChooseIssue() (err error) {
 	progressBar.Init()
 	for i, card := range cards {
 		// Fetch related issue/pull request to this card
-		progressBar.Update(i)
+		progressBar.Update(i + 1)
 		err = api.Get(card.ContentURL, &issue, headers)
 		if err != nil {
 			return
@@ -73,11 +74,12 @@ func ChooseIssue() (err error) {
 		// Get all users that are assigned to this ticket
 		assignees := ""
 		for _, assignee := range issue.Assignees {
-			assignees = assignees + fmt.Sprintf("[\x1b[33m%s\x1b[0m] ", assignee.Login)
+			assignees = assignees + fmt.Sprintf("<\x1b[33m%s\x1b[0m> ", assignee.Login)
 		}
 		fmt.Print("\n")
+		issueNumber := fmt.Sprintf("\x1b[34m#%d\x1b[0m", issue.Number)
 
-		card.Name = fmt.Sprintf("%s%s", assignees, issue.Name)
+		card.Name = fmt.Sprintf("%s %s%s", issueNumber, assignees, issue.Name)
 		items = append(items, screen.Item(card))
 	}
 	progressBar.Close()
